@@ -6,7 +6,7 @@ import { AppError } from '../utils/AppError';
 // Ensure uploads directory exists
 const uploadDir = process.env.NODE_ENV === 'production' 
   ? '/tmp/uploads' 
-  : path.join(__dirname, '../../uploads');
+  : path.join(process.cwd(), 'uploads');
 
 try {
   if (!fs.existsSync(uploadDir)) {

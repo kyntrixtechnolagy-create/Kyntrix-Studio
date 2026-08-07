@@ -22,8 +22,8 @@ export const logger = winston.createLogger({
 });
 
 if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.File({ filename: path.join(__dirname, '../../logs/error.log'), level: 'error' }));
-  logger.add(new winston.transports.File({ filename: path.join(__dirname, '../../logs/combined.log') }));
+  logger.add(new winston.transports.File({ filename: path.join(process.cwd(), 'logs/error.log'), level: 'error' }));
+  logger.add(new winston.transports.File({ filename: path.join(process.cwd(), 'logs/combined.log') }));
 }
 
 // Console transport is already added by default.
