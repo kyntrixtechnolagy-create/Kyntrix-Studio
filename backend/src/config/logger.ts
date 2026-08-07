@@ -15,15 +15,15 @@ export const logger = winston.createLogger({
   ),
   defaultMeta: { service: 'founder-os-backend' },
   transports: [
-    new winston.transports.File({ filename: path.join(__dirname, '../../logs/error.log'), level: 'error' }),
-    new winston.transports.File({ filename: path.join(__dirname, '../../logs/combined.log') }),
+    new winston.transports.Console({
+      format: winston.format.combine(winston.format.colorize(), logFormat),
+    })
   ],
 });
 
 if (process.env.NODE_ENV !== 'production') {
-  logger.add(
-    new winston.transports.Console({
-      format: winston.format.combine(winston.format.colorize(), logFormat),
-    })
-  );
+  logger.add(new winston.transports.File({ filename: path.join(__dirname, '../../logs/error.log'), level: 'error' }));
+  logger.add(new winston.transports.File({ filename: path.join(__dirname, '../../logs/combined.log') }));
 }
+
+// Console transport is already added by default.
