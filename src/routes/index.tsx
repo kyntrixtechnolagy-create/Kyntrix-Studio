@@ -11,6 +11,7 @@ import {
   UserPlus,
   ArrowRight,
 } from "lucide-react";
+import { motion } from "framer-motion";
 import { StatCard } from "@/components/founder/StatCard";
 import { RevenueChart } from "@/components/founder/RevenueChart";
 import { StatusBadge } from "@/components/founder/StatusBadge";
@@ -124,20 +125,33 @@ function Dashboard() {
   const firstName = profile?.name ? profile.name.split(' ')[0] : 'Rahul';
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
-      <PageHeader
-        title={`Good afternoon, ${firstName}`}
-        description="Here's how the studio is doing this month."
-        actions={
-          <Button asChild>
-            <Link to="/projects">
-              View projects <ArrowRight className="ml-1 h-4 w-4" />
-            </Link>
-          </Button>
-        }
-      />
+    <motion.div 
+      initial="hidden" 
+      animate="visible" 
+      variants={{
+        hidden: { opacity: 0 },
+        visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+      }}
+      className="mx-auto max-w-7xl space-y-6"
+    >
+      <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+        <PageHeader
+          title={`Good afternoon, ${firstName}`}
+          description="Here's how the studio is doing this month."
+          actions={
+            <Button variant="neu" asChild>
+              <Link to="/projects">
+                View projects <ArrowRight className="ml-1 h-4 w-4" />
+              </Link>
+            </Button>
+          }
+        />
+      </motion.div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <motion.div 
+        variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+      >
         {loading
           ? Array.from({ length: 7 }).map((_, i) => (
               <Skeleton key={i} className="h-[152px] rounded-xl" />
@@ -153,16 +167,21 @@ function Dashboard() {
                 { label: "New leads", value: `${totals.newLeads}`, subtitle: "This month", icon: UserPlus, trend: 25, tone: "primary" as const },
               ].map((c) => <StatCard key={c.label} {...c} />)
             )}
-      </div>
+      </motion.div>
 
-      <SectionCard
-        title="Revenue analytics"
-        action={<span className="text-xs text-muted-foreground">Revenue · Expenses · Profit</span>}
+      <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+        <SectionCard
+          title="Revenue analytics"
+          action={<span className="text-xs text-muted-foreground">Revenue · Expenses · Profit</span>}
+        >
+          {loading ? <Skeleton className="h-[320px] rounded-xl" /> : <RevenueChart />}
+        </SectionCard>
+      </motion.div>
+
+      <motion.div 
+        variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+        className="grid grid-cols-1 gap-6 xl:grid-cols-3"
       >
-        {loading ? <Skeleton className="h-[320px] rounded-xl" /> : <RevenueChart />}
-      </SectionCard>
-
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <SectionCard
           title="Recent projects"
           className="xl:col-span-2"
@@ -223,15 +242,17 @@ function Dashboard() {
             }))}
           />
         </SectionCard>
-      </div>
+      </motion.div>
 
-      <SectionCard title="Today's tasks">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {todays.map((t) => (
-            <TaskCard key={t.id} task={t} onToggle={toggleTask} />
-          ))}
-        </div>
-      </SectionCard>
-    </div>
+      <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
+        <SectionCard title="Today's tasks">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {todays.map((t) => (
+              <TaskCard key={t.id} task={t} onToggle={toggleTask} />
+            ))}
+          </div>
+        </SectionCard>
+      </motion.div>
+    </motion.div>
   );
 }

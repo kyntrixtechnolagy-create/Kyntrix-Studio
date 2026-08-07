@@ -32,9 +32,9 @@ export function SectionCard({
   className?: string;
 }) {
   return (
-    <section className={`card-surface p-5 ${className}`}>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="font-semibold">{title}</h2>
+    <section className={`card-surface p-6 md:p-8 ${className}`}>
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <h2 className="text-xl font-bold tracking-tight">{title}</h2>
         {action}
       </div>
       {children}

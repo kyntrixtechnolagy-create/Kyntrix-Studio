@@ -11,7 +11,6 @@ import {
   Lightbulb,
   BarChart3,
   Settings,
-  Boxes,
 } from "lucide-react";
 import {
   Sidebar,
@@ -59,15 +58,24 @@ export function AppSidebar() {
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => {
-            const active = item.url === "/" ? pathname === "/" : pathname.startsWith(item.url);
+            const isActive = item.url === "/" ? pathname === "/" : pathname.startsWith(item.url);
             return (
               <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild isActive={active} tooltip={item.title}>
-                  <Link to={item.url} className="flex items-center gap-2.5">
-                    <item.icon className="h-4 w-4 shrink-0" />
-                    {!collapsed && <span>{item.title}</span>}
-                  </Link>
-                </SidebarMenuButton>
+                <Link
+                  to={item.url}
+                  className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-300 ${
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-white/40 hover:text-foreground"
+                  }`}
+                >
+                  <item.icon
+                    className={`h-5 w-5 transition-transform ${
+                      isActive ? "scale-110" : "group-hover:scale-110"
+                    }`}
+                  />
+                  <span>{item.title}</span>
+                </Link>
               </SidebarMenuItem>
             );
           })}
@@ -77,11 +85,14 @@ export function AppSidebar() {
   );
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" className="hidden md:flex">
       <SidebarHeader className="px-3 py-4">
         <Link to="/" className="flex items-center gap-2.5">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Boxes className="h-5 w-5" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+              <path d="M7 4v16" />
+              <path d="M18 5l-8 7 8 8" />
+            </svg>
           </span>
           {!collapsed && (
             <span className="text-sm font-semibold tracking-tight">

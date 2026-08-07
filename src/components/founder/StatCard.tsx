@@ -28,7 +28,7 @@ export function StatCard({
 }: StatCardProps) {
   const up = (trend ?? 0) >= 0;
   return (
-    <div className="card-surface group p-5 transition-all duration-300 hover:shadow-[var(--shadow-lift)] hover:-translate-y-0.5">
+    <div className="card-surface group p-6 transition-all duration-300 hover:shadow-[var(--shadow-lift)] hover:-translate-y-1">
       <div className="flex items-start justify-between">
         <div
           className={cn(
@@ -51,9 +51,9 @@ export function StatCard({
           </span>
         )}
       </div>
-      <p className="mt-4 text-sm text-muted-foreground">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tracking-tight">{value}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
+      <p className="mt-5 text-sm font-medium text-muted-foreground">{label}</p>
+      <p className="mt-2 text-3xl font-bold tracking-tight">{value}</p>
+      <p className="mt-1.5 text-xs text-muted-foreground">{subtitle}</p>
     </div>
   );
 }
