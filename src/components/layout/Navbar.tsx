@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAppStore } from "@/store/useAppStore";
+import { InstallButton } from "./InstallButton";
 
 const notifications = [
   "Orbit Freight invoice is overdue by 4 days",
@@ -36,7 +37,8 @@ export function Navbar() {
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input placeholder="Search clients, projects, invoices…" className="h-9 pl-9" />
       </div>
-      <div className="ml-auto flex items-center gap-1.5">
+      <div className="ml-auto flex items-center gap-2">
+        <InstallButton />
         <span className="hidden rounded-lg bg-muted px-2.5 py-1.5 text-xs font-medium text-muted-foreground md:inline">
           {today}
         </span>

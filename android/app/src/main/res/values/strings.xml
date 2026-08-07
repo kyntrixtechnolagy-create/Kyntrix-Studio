@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">KyntrixStudio</string>
+    <string name="title_activity_main">KyntrixStudio</string>
+    <string name="package_name">com.kyntrix.studio</string>
+    <string name="custom_url_scheme">com.kyntrix.studio</string>
+</resources>
