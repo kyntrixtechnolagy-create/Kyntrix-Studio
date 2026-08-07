@@ -1,0 +1,134 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Client {
+  id             String    @id @default(uuid())
+  name           String
+  email          String    @unique
+  phone          String?
+  company        String?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  projects       Project[]
+}
+
+model Project {
+  id             String    @id @default(uuid())
+  name           String
+  description    String?
+  status         String    @default("ACTIVE") // ACTIVE, COMPLETED, ON_HOLD
+  progress       Int       @default(0) // 0 to 100
+  startDate      DateTime?
+  endDate        DateTime?
+  requirements   String?
+  notes          String?
+  clientId       String
+  client         Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  tasks          Task[]
+  payments       Payment[]
+  calendarEvents CalendarEvent[]
+}
+
+model Task {
+  id             String    @id @default(uuid())
+  title          String
+  description    String?
+  status         String    @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED
+  priority       String    @default("MEDIUM") // LOW, MEDIUM, HIGH
+  deadline       DateTime?
+  isRecurring    Boolean   @default(false)
+  recurringRule  String?
+  projectId      String?
+  project        Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  calendarEvents CalendarEvent[]
+}
+
+model Payment {
+  id             String    @id @default(uuid())
+  title          String
+  amount         Float
+  advancePaid    Float     @default(0)
+  status         String    @default("PENDING") // PENDING, PARTIAL, PAID
+  dueDate        DateTime?
+  projectId      String
+  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Transaction {
+  id             String    @id @default(uuid())
+  title          String
+  amount         Float
+  type           String    // INCOME, EXPENSE
+  date           DateTime  @default(now())
+  categoryId     String?
+  category       Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Category {
+  id             String        @id @default(uuid())
+  name           String        @unique
+  type           String        // FINANCE, IDEA
+  transactions   Transaction[]
+  ideas          Idea[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model Idea {
+  id             String    @id @default(uuid())
+  title          String
+  description    String?
+  priority       String    @default("MEDIUM") // LOW, MEDIUM, HIGH
+  tags           String?   // comma separated
+  categoryId     String?
+  category       Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Document {
+  id             String    @id @default(uuid())
+  name           String
+  originalName   String
+  mimeType       String
+  size           Int
+  path           String
+  folder         String?
+  categoryId     String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model CalendarEvent {
+  id             String    @id @default(uuid())
+  title          String
+  description    String?
+  startDate      DateTime
+  endDate        DateTime
+  type           String    // MEETING, DEADLINE, EVENT
+  projectId      String?
+  project        Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskId         String?
+  task           Task?     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
