@@ -87,7 +87,7 @@ export class ProjectService {
       if (project.payments && project.payments.length > 0) {
         updateData.payments = {
           update: {
-            where: { id: project.payments[0].id },
+            where: { id: project.payments[0]!.id },
             data: {
               amount: pData.amount,
               advancePaid: pData.advancePaid
@@ -114,7 +114,7 @@ export class ProjectService {
       // If there's an advance payment and it was newly added or updated, we should record it.
       // A more robust system would check if it was already recorded, but for this simple ledger we'll record it.
       // To prevent duplicate transactions on every update, we will only record it if the advancePaid amount changed.
-      const oldAdvance = project.payments && project.payments.length > 0 ? project.payments[0].advancePaid : 0;
+      const oldAdvance = project.payments && project.payments.length > 0 ? project.payments[0]!.advancePaid : 0;
       
       if (pData.advancePaid && pData.advancePaid > oldAdvance) {
         const diff = pData.advancePaid - oldAdvance;

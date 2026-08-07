@@ -90,7 +90,7 @@ export class AnalyticsService {
     }
 
     tasks.forEach(t => {
-      const dayStr = days[new Date(t.updatedAt).getDay()];
+      const dayStr = days[new Date(t.updatedAt).getDay()]!;
       if (productivityMap.has(dayStr)) {
         productivityMap.get(dayStr)!.tasks += 1;
         // Estimate: 1 task roughly equals 1.5 focus hours
