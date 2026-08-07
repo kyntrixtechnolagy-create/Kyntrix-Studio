@@ -16,24 +16,19 @@ export default defineConfig({
   vite: {
     plugins: [
       VitePWA({
-        registerType: "autoUpdate",
+        registerType: 'autoUpdate',
         manifest: {
-          name: "Kyntrix Studio",
-          short_name: "Kyntrix",
-          description: "FounderOS Operating System",
-          theme_color: "#0f1115",
-          background_color: "#F3F6FB",
-          display: "standalone",
+          name: 'Kyntrix Studio',
+          short_name: 'Kyntrix',
+          theme_color: '#0f1115',
+          background_color: '#0f1115',
+          display: 'standalone',
           icons: [
-            {
-              src: "favicon.svg",
-              sizes: "any",
-              type: "image/svg+xml",
-              purpose: "any maskable",
-            },
-          ],
-        },
-      }),
-    ],
-  },
+            { src: '/favicon.png', sizes: '192x192', type: 'image/png' },
+            { src: '/favicon.png', sizes: '512x512', type: 'image/png' }
+          ]
+        }
+      })
+    ]
+  }
 });
