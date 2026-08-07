@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Bell, Search, Moon, Sun } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,9 @@ export function Navbar() {
   const profile = useAppStore((s) => s.profile);
   const theme = useAppStore((s) => s.theme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
+  
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
@@ -37,8 +41,8 @@ export function Navbar() {
         <Input placeholder="Search clients, projects, invoices…" className="h-9 pl-9" />
       </div>
       <div className="ml-auto flex items-center gap-1.5">
-        <span className="hidden rounded-lg bg-muted px-2.5 py-1.5 text-xs font-medium text-muted-foreground md:inline">
-          {today}
+        <span className="hidden rounded-lg bg-muted px-2.5 py-1.5 text-xs font-medium text-muted-foreground md:inline min-w-24 text-center">
+          {mounted ? today : "..."}
         </span>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
