@@ -48,15 +48,21 @@ function PaymentsPage() {
     fetchFromAPI('/payments')
       .then(res => {
         if (!res?.data) return;
-        const mapped = res.data.map((p: any) => ({
-          id: p.id,
-          client: p.project?.client?.name || "Unknown",
-          project: p.project?.name || "Unknown",
-          total: p.amount,
-          paid: p.advancePaid,
-          dueDate: p.dueDate ? p.dueDate.substring(0, 10) : "-",
-          status: p.status.toLowerCase(),
-        }));
+        const mapped = res.data.map((p: any) => {
+          const paid = p.advancePaid;
+          const total = p.amount;
+          const derivedStatus = paid >= total ? 'paid' : paid > 0 ? 'partial' : p.status.toLowerCase();
+          const mapped = {
+            id: p.id,
+            client: p.project?.client?.name || "Unknown",
+            project: p.project?.name || "Unknown",
+            total,
+            paid,
+            dueDate: p.dueDate ? p.dueDate.substring(0, 10) : "-",
+            status: derivedStatus,
+          };
+          return mapped;
+        });
         setData(mapped);
       })
       .catch(console.error);

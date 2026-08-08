@@ -23,8 +23,12 @@ export class ProjectService {
         create: payments.map((p: any) => ({
           title: p.title || 'Project Payment',
           amount: p.amount,
-          advancePaid: p.advancePaid,
-          status: p.status,
+          advancePaid: p.advancePaid ?? 0,
+          status: (p.advancePaid ?? 0) >= p.amount
+            ? 'PAID'
+            : (p.advancePaid ?? 0) > 0
+            ? 'PARTIAL'
+            : 'PENDING',
         })),
       };
     }
@@ -90,7 +94,12 @@ export class ProjectService {
             where: { id: project.payments[0]!.id },
             data: {
               amount: pData.amount,
-              advancePaid: pData.advancePaid
+              advancePaid: pData.advancePaid,
+              status: pData.advancePaid >= pData.amount
+                ? 'PAID'
+                : pData.advancePaid > 0
+                ? 'PARTIAL'
+                : 'PENDING',
             }
           }
         };
