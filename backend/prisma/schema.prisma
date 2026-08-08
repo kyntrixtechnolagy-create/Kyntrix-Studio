@@ -27,7 +27,7 @@ model Project {
   id             String    @id @default(uuid())
   name           String
   description    String?
-  status         String    @default("ACTIVE") // ACTIVE, COMPLETED, ON_HOLD
+  status         String    @default("ACTIVE") // PLANNING, ACTIVE, COMPLETED, ON_HOLD
   progress       Int       @default(0) // 0 to 100
   startDate      DateTime?
   endDate        DateTime?

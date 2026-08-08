@@ -4,7 +4,7 @@ export const createProjectSchema = z.object({
   body: z.object({
     name: z.string().min(2, 'Name is required'),
     description: z.string().optional(),
-    status: z.enum(['ACTIVE', 'COMPLETED', 'ON_HOLD']).optional(),
+    status: z.enum(['PLANNING', 'ACTIVE', 'COMPLETED', 'ON_HOLD']).optional(),
     progress: z.number().min(0).max(100).optional(),
     startDate: z.string().datetime().optional(),
     endDate: z.string().datetime().optional(),
@@ -21,7 +21,7 @@ export const updateProjectSchema = z.object({
   body: z.object({
     name: z.string().min(2).optional(),
     description: z.string().optional(),
-    status: z.enum(['ACTIVE', 'COMPLETED', 'ON_HOLD']).optional(),
+    status: z.enum(['PLANNING', 'ACTIVE', 'COMPLETED', 'ON_HOLD']).optional(),
     progress: z.number().min(0).max(100).optional(),
     startDate: z.string().datetime().optional(),
     endDate: z.string().datetime().optional(),
