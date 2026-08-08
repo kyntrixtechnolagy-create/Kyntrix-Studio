@@ -14,7 +14,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ArrowDownRight, ArrowUpRight, PiggyBank, Wallet } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, PiggyBank, Wallet, Plus, Loader2 } from "lucide-react";
 import { PageHeader, SectionCard } from "@/components/layout/PageHeader";
 import { StatCard } from "@/components/founder/StatCard";
 import { currency } from "@/lib/mock-data";
@@ -38,7 +38,6 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/finance")({
@@ -78,9 +77,20 @@ function FinancePage() {
     expenses: []
   });
 
-  const [dialogOpen, setDialogOpen] = useState(false);
+  // --- Savings dialog state ---
+  const [savingsOpen, setSavingsOpen] = useState(false);
   const [savingsAmount, setSavingsAmount] = useState<number | "">("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [savingsSubmitting, setSavingsSubmitting] = useState(false);
+
+  // --- Expense dialog state ---
+  const [expenseOpen, setExpenseOpen] = useState(false);
+  const [expenseForm, setExpenseForm] = useState({
+    title: "",
+    amount: "" as number | "",
+    category: "",
+    date: new Date().toISOString().slice(0, 10),
+  });
+  const [expenseSubmitting, setExpenseSubmitting] = useState(false);
 
   const loadFinance = () => {
     fetchFromAPI('/finance?limit=100')
@@ -90,7 +100,7 @@ function FinancePage() {
         let revenue = 0;
         let expensesTotal = 0;
         let savingsTotal = 0;
-        
+
         const monthlyStats: Record<string, { revenue: number, expenses: number, profit: number }> = {};
         const categoryMap: Record<string, number> = {};
         const recentExpenses: any[] = [];
@@ -102,25 +112,22 @@ function FinancePage() {
               expensesTotal += t.amount;
               const catName = t.category?.name || 'Uncategorized';
               categoryMap[catName] = (categoryMap[catName] || 0) + t.amount;
-              if (recentExpenses.length < 10) {
-                 recentExpenses.push({
-                   id: t.id,
-                   category: catName,
-                   label: t.title,
-                   date: t.date ? t.date.substring(0, 10) : '-',
-                   amount: t.amount
-                 });
-              }
+              recentExpenses.push({
+                id: t.id,
+                category: catName,
+                label: t.title,
+                date: t.date ? t.date.substring(0, 10) : '-',
+                amount: t.amount
+              });
            } else if (t.type === 'SAVINGS') {
               savingsTotal += t.amount;
            }
-           
+
            if (t.date) {
              const month = new Date(t.date).toLocaleString('default', { month: 'short' });
              if (!monthlyStats[month]) monthlyStats[month] = { revenue: 0, expenses: 0, profit: 0 };
              if (t.type === 'INCOME') monthlyStats[month].revenue += t.amount;
              if (t.type === 'EXPENSE') monthlyStats[month].expenses += t.amount;
-             // We won't deduct savings from monthly profit chart as profit is usually (Revenue - Expenses)
              monthlyStats[month].profit = monthlyStats[month].revenue - monthlyStats[month].expenses;
            }
         });
@@ -139,7 +146,7 @@ function FinancePage() {
           totals: { revenue, expenses: expensesTotal, savings: savingsTotal, profit: revenue - expensesTotal - savingsTotal },
           revenueSeries: revSeries,
           expenseCategories: expCats,
-          expenses: recentExpenses
+          expenses: recentExpenses.slice(0, 10)
         });
       })
       .catch(console.error);
@@ -149,13 +156,14 @@ function FinancePage() {
     loadFinance();
   }, []);
 
+  // --- Handlers ---
   const handleAddSavings = async () => {
     if (!savingsAmount || savingsAmount <= 0) {
       toast.error("Enter a valid amount");
       return;
     }
     try {
-      setIsSubmitting(true);
+      setSavingsSubmitting(true);
       await fetchFromAPI('/finance', {
         method: 'POST',
         body: JSON.stringify({
@@ -165,13 +173,47 @@ function FinancePage() {
         })
       });
       toast.success("Transferred to savings");
-      setDialogOpen(false);
+      setSavingsOpen(false);
       setSavingsAmount("");
       loadFinance();
     } catch (err: any) {
       toast.error(err.message || "Failed to add savings");
     } finally {
-      setIsSubmitting(false);
+      setSavingsSubmitting(false);
+    }
+  };
+
+  const handleAddExpense = async () => {
+    if (!expenseForm.title.trim()) {
+      toast.error("Enter an expense title");
+      return;
+    }
+    if (!expenseForm.amount || Number(expenseForm.amount) <= 0) {
+      toast.error("Enter a valid amount");
+      return;
+    }
+    try {
+      setExpenseSubmitting(true);
+      await fetchFromAPI('/finance', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: expenseForm.title.trim(),
+          amount: Number(expenseForm.amount),
+          type: 'EXPENSE',
+          date: expenseForm.date ? new Date(expenseForm.date).toISOString() : undefined,
+          ...(expenseForm.category.trim()
+            ? { notes: expenseForm.category.trim() }
+            : {}),
+        })
+      });
+      toast.success("Expense recorded");
+      setExpenseOpen(false);
+      setExpenseForm({ title: "", amount: "", category: "", date: new Date().toISOString().slice(0, 10) });
+      loadFinance();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to record expense");
+    } finally {
+      setExpenseSubmitting(false);
     }
   };
 
@@ -179,42 +221,119 @@ function FinancePage() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <PageHeader 
-        title="Finance" 
-        description="Cash in, cash out, and what's left." 
+      <PageHeader
+        title="Finance"
+        description="Cash in, cash out, and what's left."
         actions={
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-1 h-4 w-4" /> Add savings
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Transfer to savings</DialogTitle>
-                <DialogDescription>
-                  Move a portion of your profits into your reserve account.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-3 py-4">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="samount">Amount to transfer (Rs.)</Label>
-                  <Input 
-                    id="samount" 
-                    type="number" 
-                    min="1" 
-                    value={savingsAmount} 
-                    onChange={e => setSavingsAmount(e.target.value ? Number(e.target.value) : "")} 
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button onClick={handleAddSavings} disabled={isSubmitting}>
-                  {isSubmitting ? "Transferring..." : "Transfer"}
+          <div className="flex gap-2">
+            {/* ── Add Expense ── */}
+            <Dialog open={expenseOpen} onOpenChange={setExpenseOpen}>
+              <DialogTrigger asChild>
+                <Button variant="destructive" id="add-expense-btn">
+                  <Plus className="mr-1 h-4 w-4" /> Add expense
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Record an expense</DialogTitle>
+                  <DialogDescription>
+                    Log a business expense to keep your profit accurate.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="exp-title">Title / description</Label>
+                    <Input
+                      id="exp-title"
+                      placeholder="e.g. Adobe subscription"
+                      value={expenseForm.title}
+                      onChange={e => setExpenseForm(f => ({ ...f, title: e.target.value }))}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="exp-amount">Amount (Rs.)</Label>
+                      <Input
+                        id="exp-amount"
+                        type="number"
+                        min="1"
+                        placeholder="0"
+                        value={expenseForm.amount}
+                        onChange={e => setExpenseForm(f => ({ ...f, amount: e.target.value ? Number(e.target.value) : "" }))}
+                      />
+                    </div>
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="exp-date">Date</Label>
+                      <Input
+                        id="exp-date"
+                        type="date"
+                        value={expenseForm.date}
+                        onChange={e => setExpenseForm(f => ({ ...f, date: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="exp-category">Category <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                    <Input
+                      id="exp-category"
+                      placeholder="e.g. Software, Marketing, Tools"
+                      value={expenseForm.category}
+                      onChange={e => setExpenseForm(f => ({ ...f, category: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setExpenseOpen(false)}>Cancel</Button>
+                  <Button variant="destructive" onClick={handleAddExpense} disabled={expenseSubmitting} id="save-expense-btn">
+                    {expenseSubmitting ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…</>
+                    ) : (
+                      "Record expense"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* ── Add Savings ── */}
+            <Dialog open={savingsOpen} onOpenChange={setSavingsOpen}>
+              <DialogTrigger asChild>
+                <Button id="add-savings-btn">
+                  <Plus className="mr-1 h-4 w-4" /> Add savings
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Transfer to savings</DialogTitle>
+                  <DialogDescription>
+                    Move a portion of your profits into your reserve account.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-3 py-4">
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="samount">Amount to transfer (Rs.)</Label>
+                    <Input
+                      id="samount"
+                      type="number"
+                      min="1"
+                      value={savingsAmount}
+                      onChange={e => setSavingsAmount(e.target.value ? Number(e.target.value) : "")}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setSavingsOpen(false)}>Cancel</Button>
+                  <Button onClick={handleAddSavings} disabled={savingsSubmitting} id="save-savings-btn">
+                    {savingsSubmitting ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Transferring…</>
+                    ) : (
+                      "Transfer"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         }
       />
 
@@ -284,14 +403,22 @@ function FinancePage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {expenses.map((e) => (
-                <TableRow key={e.id}>
-                  <TableCell className="font-medium">{e.category}</TableCell>
-                  <TableCell className="text-muted-foreground">{e.label}</TableCell>
-                  <TableCell className="text-muted-foreground">{e.date}</TableCell>
-                  <TableCell className="text-right">{currency(e.amount)}</TableCell>
+              {expenses.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="py-8 text-center text-muted-foreground text-sm">
+                    No expenses recorded yet. Click <strong>Add expense</strong> to get started.
+                  </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                expenses.map((e) => (
+                  <TableRow key={e.id}>
+                    <TableCell className="font-medium">{e.category}</TableCell>
+                    <TableCell className="text-muted-foreground">{e.label}</TableCell>
+                    <TableCell className="text-muted-foreground">{e.date}</TableCell>
+                    <TableCell className="text-right">{currency(e.amount)}</TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </SectionCard>
