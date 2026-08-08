@@ -1,42 +1,79 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, Paperclip, Download } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { ArrowLeft, Calendar, Clock, DollarSign, User, CheckCircle2, Circle, Loader2 } from "lucide-react";
 import { PageHeader, SectionCard } from "@/components/layout/PageHeader";
 import { ProgressCircle } from "@/components/founder/ProgressCircle";
 import { StatusBadge } from "@/components/founder/StatusBadge";
-import { Timeline } from "@/components/founder/Timeline";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { currency, projects, type Project } from "@/lib/mock-data";
+import { Skeleton } from "@/components/ui/skeleton";
+import { fetchFromAPI } from "@/lib/api";
+import { currency } from "@/lib/mock-data";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/projects/$projectId")({
-  loader: ({ params }): { project: Project } => {
-    const project = projects.find((p) => p.id === params.projectId);
-    if (!project) throw notFound();
-    return { project };
-  },
-  head: ({ loaderData }) => {
-    if (!loaderData) {
-      return {
-        meta: [{ title: "Project unavailable — FounderOS" }, { name: "robots", content: "noindex" }],
-      };
-    }
-    const { project } = loaderData;
-    return {
-      meta: [
-        { title: `${project.name} — FounderOS` },
-        { name: "description", content: `${project.name} for ${project.client}: modules, timeline, requirements and payment summary.` },
-        { property: "og:title", content: `${project.name} — FounderOS` },
-        { property: "og:description", content: `Project details for ${project.client}.` },
-      ],
-    };
-  },
+  head: () => ({
+    meta: [
+      { title: "Project — FounderOS" },
+      { name: "description", content: "Project details, tasks, payments and timeline." },
+    ],
+  }),
   component: ProjectDetail,
 });
 
 function ProjectDetail() {
-  const { project } = Route.useLoaderData() as { project: Project };
-  const pending = project.price - project.advance;
+  const { projectId } = Route.useParams();
+  const [project, setProject] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchFromAPI(`/projects/${projectId}`)
+      .then((data) => setProject(data))
+      .catch(() => {
+        toast.error("Project not found");
+        setProject(null);
+      })
+      .finally(() => setLoading(false));
+  }, [projectId]);
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-7xl space-y-6">
+        <Skeleton className="h-8 w-32 rounded-lg" />
+        <Skeleton className="h-16 w-full rounded-xl" />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-48 rounded-2xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div className="mx-auto max-w-7xl space-y-4">
+        <Button variant="ghost" size="sm" asChild className="-ml-2">
+          <Link to="/projects">
+            <ArrowLeft className="mr-1 h-4 w-4" /> Back to projects
+          </Link>
+        </Button>
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-24 text-center text-muted-foreground">
+          <p className="text-lg font-semibold">Project not found</p>
+          <p className="mt-1 text-sm">This project may have been deleted.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const totalPrice = project.payments?.reduce((s: number, p: any) => s + p.amount, 0) ?? 0;
+  const totalAdvance = project.payments?.reduce((s: number, p: any) => s + p.advancePaid, 0) ?? 0;
+  const pending = totalPrice - totalAdvance;
+  const collectedPct = totalPrice > 0 ? Math.round((totalAdvance / totalPrice) * 100) : 0;
+  const status = (project.status ?? "").toLowerCase().replace("_", "-");
+
+  const pendingTasks = project.tasks?.filter((t: any) => t.status !== "COMPLETED") ?? [];
+  const doneTasks = project.tasks?.filter((t: any) => t.status === "COMPLETED") ?? [];
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -48,91 +85,135 @@ function ProjectDetail() {
 
       <PageHeader
         title={project.name}
-        description={`${project.client} · started ${project.startedAt} · due ${project.deadline}`}
-        actions={<StatusBadge status={project.status} />}
+        description={
+          [
+            project.client?.name && `Client: ${project.client.name}`,
+            project.startDate && `Started: ${project.startDate.substring(0, 10)}`,
+            project.endDate && `Due: ${project.endDate.substring(0, 10)}`,
+          ]
+            .filter(Boolean)
+            .join(" · ")
+        }
+        actions={<StatusBadge status={status} />}
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Progress circle */}
         <SectionCard title="Progress" className="flex flex-col items-center">
-          <ProgressCircle value={project.progress} label="complete" />
-          <p className="mt-4 text-center text-sm text-muted-foreground">{project.description}</p>
+          <ProgressCircle value={project.progress ?? 0} label="complete" />
+          {project.description && (
+            <p className="mt-4 text-center text-sm text-muted-foreground">{project.description}</p>
+          )}
         </SectionCard>
 
+        {/* Payment summary */}
         <SectionCard title="Payment summary" className="lg:col-span-2">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {[
-              { label: "Project value", value: currency(project.price) },
-              { label: "Received", value: currency(project.advance) },
-              { label: "Pending", value: currency(pending) },
+              { label: "Project value", value: currency(totalPrice), icon: DollarSign, color: "text-foreground" },
+              { label: "Received", value: currency(totalAdvance), icon: CheckCircle2, color: "text-emerald-500" },
+              { label: "Pending", value: currency(pending), icon: Clock, color: "text-amber-500" },
             ].map((s) => (
               <div key={s.label} className="rounded-xl bg-muted/50 p-4">
-                <p className="text-xs text-muted-foreground">{s.label}</p>
-                <p className="mt-1 text-xl font-semibold">{s.value}</p>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <s.icon className={`h-3.5 w-3.5 ${s.color}`} />
+                  {s.label}
+                </div>
+                <p className={`mt-1.5 text-xl font-semibold ${s.color}`}>{s.value}</p>
               </div>
             ))}
           </div>
           <div className="mt-5 space-y-2">
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>Collected</span>
-              <span>{Math.round((project.advance / project.price) * 100)}%</span>
+              <span>{collectedPct}%</span>
             </div>
-            <Progress value={(project.advance / project.price) * 100} className="h-2" />
+            <Progress value={collectedPct} className="h-2" />
           </div>
+
+          {/* Payment rows */}
+          {project.payments?.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Payments</p>
+              {project.payments.map((pay: any) => (
+                <div key={pay.id} className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2 text-sm">
+                  <span className="font-medium">{pay.title}</span>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span>{currency(pay.amount)}</span>
+                    <StatusBadge status={pay.status?.toLowerCase()} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </SectionCard>
 
-        <SectionCard title="Modules">
-          <ul className="space-y-3">
-            {project.modules.map((m) => (
-              <li key={m.name} className="flex items-center gap-3 text-sm">
-                <Checkbox checked={m.done} aria-label={m.name} />
-                <span className={m.done ? "text-muted-foreground line-through" : ""}>{m.name}</span>
-              </li>
-            ))}
-          </ul>
+        {/* Tasks */}
+        <SectionCard title={`Tasks (${project.tasks?.length ?? 0})`} className="lg:col-span-2">
+          {!project.tasks?.length ? (
+            <p className="text-sm text-muted-foreground">No tasks for this project.</p>
+          ) : (
+            <ul className="space-y-2">
+              {project.tasks.map((t: any) => {
+                const done = t.status === "COMPLETED";
+                return (
+                  <li key={t.id} className="flex items-start gap-3 rounded-lg bg-muted/40 px-3 py-2.5 text-sm">
+                    {done
+                      ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                      : <Circle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />}
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-medium ${done ? "line-through text-muted-foreground" : ""}`}>{t.title}</p>
+                      {t.description && <p className="text-xs text-muted-foreground truncate">{t.description}</p>}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <StatusBadge status={t.priority?.toLowerCase()} />
+                      {t.deadline && (
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          {t.deadline.substring(0, 10)}
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </SectionCard>
 
-        <SectionCard title="Timeline">
-          <Timeline
-            items={project.timeline.map((t) => ({ title: t.label, meta: t.date, done: t.done }))}
-          />
-        </SectionCard>
+        {/* Client info */}
+        {project.client && (
+          <SectionCard title="Client">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <User className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">{project.client.name}</p>
+                  {project.client.email && <p className="text-xs text-muted-foreground">{project.client.email}</p>}
+                </div>
+              </div>
+              {project.client.company && (
+                <div className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                  🏢 {project.client.company}
+                </div>
+              )}
+              {project.client.phone && (
+                <div className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                  📞 {project.client.phone}
+                </div>
+              )}
+            </div>
+          </SectionCard>
+        )}
 
-        <SectionCard title="Requirements">
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            {project.requirements.map((r) => (
-              <li key={r} className="flex gap-2">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                {r}
-              </li>
-            ))}
-          </ul>
-        </SectionCard>
-
-        <SectionCard title="Notes" className="lg:col-span-2">
-          <ul className="space-y-3">
-            {project.notes.map((n) => (
-              <li key={n} className="rounded-xl bg-muted/50 p-3 text-sm">
-                {n}
-              </li>
-            ))}
-          </ul>
-        </SectionCard>
-
-        <SectionCard title="Attachments">
-          <ul className="space-y-2">
-            {project.attachments.map((a) => (
-              <li
-                key={a.name}
-                className="flex items-center gap-3 rounded-xl border p-3 text-sm transition-colors hover:bg-accent"
-              >
-                <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="min-w-0 flex-1 truncate">{a.name}</span>
-                <span className="text-xs text-muted-foreground">{a.size}</span>
-                <Download className="h-4 w-4 text-muted-foreground" />
-              </li>
-            ))}
-          </ul>
-        </SectionCard>
+        {/* Notes */}
+        {project.notes && (
+          <SectionCard title="Notes" className="lg:col-span-3">
+            <p className="whitespace-pre-wrap rounded-xl bg-muted/50 p-4 text-sm text-muted-foreground">{project.notes}</p>
+          </SectionCard>
+        )}
       </div>
     </div>
   );
