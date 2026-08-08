@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchFromAPI } from "@/lib/api";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Search, Plus, MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import {
+  Search, Plus, MoreHorizontal, Edit, Trash2,
+  Calendar, User, TrendingUp, DollarSign, ArrowRight,
+} from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatusBadge } from "@/components/founder/StatusBadge";
 import { Progress } from "@/components/ui/progress";
@@ -21,14 +24,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -62,7 +57,7 @@ export const Route = createFileRoute("/projects/")({
   component: ProjectsPage,
 });
 
-const PER_PAGE = 10;
+const PER_PAGE = 12;
 
 function ProjectsPage() {
   const [loading, setLoading] = useState(true);
@@ -185,7 +180,15 @@ function ProjectsPage() {
   );
   const pages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const current = Math.min(page, pages);
-  const rows = filtered.slice((current - 1) * PER_PAGE, current * PER_PAGE);
+  const cards = filtered.slice((current - 1) * PER_PAGE, current * PER_PAGE);
+
+  // Status → accent colour mapping for card left-border
+  const statusColor: Record<string, string> = {
+    active: "border-l-emerald-500",
+    completed: "border-l-violet-500",
+    planning: "border-l-sky-500",
+    "on-hold": "border-l-amber-500",
+  };
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -272,6 +275,7 @@ function ProjectsPage() {
         }
       />
 
+      {/* Search & Filter */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative min-w-56 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -296,108 +300,138 @@ function ProjectsPage() {
         </Select>
       </div>
 
+      {/* Cards Grid */}
       {loading ? (
-        <Skeleton className="h-96 rounded-xl" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-52 rounded-2xl" />
+          ))}
+        </div>
+      ) : cards.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-20 text-center text-muted-foreground">
+          <TrendingUp className="mb-3 h-10 w-10 opacity-30" />
+          <p className="text-sm font-medium">No projects found</p>
+          <p className="mt-1 text-xs">Try adjusting your search or filter.</p>
+        </div>
       ) : (
-        <div className="card-surface overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Project</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead className="text-right">Price</TableHead>
-                <TableHead className="text-right">Advance</TableHead>
-                <TableHead className="text-right">Pending</TableHead>
-                <TableHead className="w-[150px]">Progress</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Deadline</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-medium">
-                    <Link
-                      to="/projects/$projectId"
-                      params={{ projectId: p.id }}
-                      className="hover:text-primary"
-                    >
-                      {p.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{p.client}</TableCell>
-                  <TableCell className="text-right">{currency(p.price)}</TableCell>
-                  <TableCell className="text-right text-success">{currency(p.advance)}</TableCell>
-                  <TableCell className="text-right font-medium">
-                    {currency(p.price - p.advance)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Progress value={p.progress} className="h-1.5" />
-                      <span className="w-8 text-xs text-muted-foreground">{p.progress}%</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={p.status} />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{p.deadline}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(p)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                          onClick={() => handleDelete(p.id)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {cards.map((p) => (
+            <div
+              key={p.id}
+              className={`card-surface group relative flex flex-col gap-4 rounded-2xl border-l-4 p-5 transition-shadow hover:shadow-lg ${statusColor[p.status] ?? "border-l-border"}`}
+            >
+              {/* Top row: name + actions */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <Link
+                    to="/projects/$projectId"
+                    params={{ projectId: p.id }}
+                    className="truncate text-base font-semibold leading-snug hover:text-primary transition-colors"
+                  >
+                    {p.name}
+                  </Link>
+                  <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <User className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{p.client}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <StatusBadge status={p.status} />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEdit(p)}>
+                        <Edit className="mr-2 h-4 w-4" /> Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                        onClick={() => handleDelete(p.id)}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Progress</span>
+                  <span className="font-medium text-foreground">{p.progress}%</span>
+                </div>
+                <Progress value={p.progress} className="h-2" />
+              </div>
+
+              {/* Financial row */}
+              <div className="grid grid-cols-3 gap-2 rounded-xl bg-muted/40 px-3 py-2.5 text-xs">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-muted-foreground">Price</span>
+                  <span className="font-semibold">{currency(p.price)}</span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-muted-foreground">Advance</span>
+                  <span className="font-semibold text-emerald-500">{currency(p.advance)}</span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-muted-foreground">Pending</span>
+                  <span className="font-semibold text-amber-500">{currency(p.price - p.advance)}</span>
+                </div>
+              </div>
+
+              {/* Footer: deadline + link */}
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="h-3 w-3" />
+                  <span>{p.deadline}</span>
+                </div>
+                <Link
+                  to="/projects/$projectId"
+                  params={{ projectId: p.id }}
+                  className="flex items-center gap-0.5 text-primary opacity-0 group-hover:opacity-100 transition-opacity hover:underline"
+                >
+                  Open <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
-      <Pagination>
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious
-              href="#"
-              onClick={(e) => { e.preventDefault(); setPage(Math.max(1, current - 1)); }}
-            />
-          </PaginationItem>
-          {Array.from({ length: pages }, (_, i) => (
-            <PaginationItem key={i}>
-              <PaginationLink
+      {/* Pagination */}
+      {pages > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
                 href="#"
-                isActive={current === i + 1}
-                onClick={(e) => { e.preventDefault(); setPage(i + 1); }}
-              >
-                {i + 1}
-              </PaginationLink>
+                onClick={(e) => { e.preventDefault(); setPage(Math.max(1, current - 1)); }}
+              />
             </PaginationItem>
-          ))}
-          <PaginationItem>
-            <PaginationNext
-              href="#"
-              onClick={(e) => { e.preventDefault(); setPage(Math.min(pages, current + 1)); }}
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
+            {Array.from({ length: pages }, (_, i) => (
+              <PaginationItem key={i}>
+                <PaginationLink
+                  href="#"
+                  isActive={current === i + 1}
+                  onClick={(e) => { e.preventDefault(); setPage(i + 1); }}
+                >
+                  {i + 1}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                onClick={(e) => { e.preventDefault(); setPage(Math.min(pages, current + 1)); }}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   );
 }
