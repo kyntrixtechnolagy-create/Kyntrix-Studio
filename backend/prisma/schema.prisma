@@ -133,3 +133,13 @@ model CalendarEvent {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
+
+model UserSettings {
+  id         String   @id @default("default")
+  name       String   @default("")
+  studioName String   @default("")
+  email      String   @default("")
+  currency   String   @default("USD")
+  theme      String   @default("light")
+  updatedAt  DateTime @updatedAt
+}

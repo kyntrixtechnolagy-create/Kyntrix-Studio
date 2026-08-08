@@ -16,6 +16,7 @@ import calendarRoutes from './routes/calendar.routes';
 import ideaRoutes from './routes/idea.routes';
 import documentRoutes from './routes/document.routes';
 import analyticsRoutes from './routes/analytics.routes';
+import settingsRoutes from './routes/settings.routes';
 
 const app: Application = express();
 
@@ -44,6 +45,7 @@ app.use('/api/calendar', calendarRoutes);
 app.use('/api/ideas', ideaRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Health Check
 app.get('/health', (req, res) => {
