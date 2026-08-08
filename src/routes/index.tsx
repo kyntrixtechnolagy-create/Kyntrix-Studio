@@ -55,6 +55,7 @@ export const Route = createFileRoute("/")({
 function Dashboard() {
   const [data, setData] = useState<any>({
     totals: { revenue: 0, pending: 0, savings: 0, activeProjects: 0, completedProjects: 0, pendingTasks: 0, newLeads: 0 },
+    trends: { revenue: 0, pending: 0, savings: 0, activeProjects: 0, completedProjects: 0, pendingTasks: 0, newLeads: 0 },
     recent: [],
     events: [],
   });
@@ -79,7 +80,8 @@ function Dashboard() {
             completedProjects: d.completedProjects || 0,
             pendingTasks: d.pendingTasks || 0,
             newLeads: 0,
-          }
+          },
+          trends: d.trends || prev.trends,
         }));
       })
       .catch(console.error)
@@ -120,7 +122,7 @@ function Dashboard() {
       }).catch(console.error);
   }, []);
 
-  const { totals, recent, events } = data;
+  const { totals, trends, recent, events } = data;
   const profile = useAppStore((s) => s.profile);
   const firstName = profile?.name ? profile.name.split(' ')[0] : 'Rahul';
 
@@ -158,13 +160,13 @@ function Dashboard() {
             ))
           : (
               [
-                { label: "Total revenue", value: currency(totals.revenue), subtitle: "Year to date", icon: DollarSign, trend: 12.4, tone: "primary" as const },
-                { label: "Pending amount", value: currency(totals.pending), subtitle: "Across 9 invoices", icon: Clock, trend: -3.1, tone: "warning" as const },
-                { label: "Savings", value: currency(totals.savings), subtitle: "Reserve account", icon: PiggyBank, trend: 8.2, tone: "success" as const },
-                { label: "Active projects", value: `${totals.activeProjects}`, subtitle: "In delivery", icon: FolderKanban, trend: 5, tone: "info" as const },
-                { label: "Completed projects", value: `${totals.completedProjects}`, subtitle: "Shipped in 2026", icon: CheckCircle2, trend: 16.7, tone: "success" as const },
-                { label: "Pending tasks", value: `${totals.pendingTasks}`, subtitle: "Across all boards", icon: ListChecks, trend: -6.5, tone: "destructive" as const },
-                { label: "New leads", value: `${totals.newLeads}`, subtitle: "This month", icon: UserPlus, trend: 25, tone: "primary" as const },
+                { label: "Total revenue", value: currency(totals.revenue), subtitle: "Year to date", icon: DollarSign, trend: trends.revenue, tone: "primary" as const },
+                { label: "Pending amount", value: currency(totals.pending), subtitle: "Unpaid invoices", icon: Clock, trend: trends.pending, tone: "warning" as const },
+                { label: "Savings", value: currency(totals.savings), subtitle: "Reserve account", icon: PiggyBank, trend: trends.savings, tone: "success" as const },
+                { label: "Active projects", value: `${totals.activeProjects}`, subtitle: "In delivery", icon: FolderKanban, trend: trends.activeProjects, tone: "info" as const },
+                { label: "Completed projects", value: `${totals.completedProjects}`, subtitle: "Shipped in 2026", icon: CheckCircle2, trend: trends.completedProjects, tone: "success" as const },
+                { label: "Pending tasks", value: `${totals.pendingTasks}`, subtitle: "Across all boards", icon: ListChecks, trend: trends.pendingTasks, tone: "destructive" as const },
+                { label: "New leads", value: `${totals.newLeads}`, subtitle: "This month", icon: UserPlus, trend: trends.newLeads, tone: "primary" as const },
               ].map((c) => <StatCard key={c.label} {...c} />)
             )}
       </motion.div>
